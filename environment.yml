@@ -1,0 +1,9 @@
+name: Naman Goyal
+
+dependencies:
+  - python=3.7
+  - pytorch
+  - numpy
+  - pandas
+  - scikit-learn
+  - xgboost

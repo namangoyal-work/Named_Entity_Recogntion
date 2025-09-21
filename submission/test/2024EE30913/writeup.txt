@@ -1,0 +1,50 @@
+Approach:
+The initial approach I took was to try training a small transformer, but I
+quickly gave up on that as a result of the compute and data needed, not to
+mention that transformers don't work well with pretrained embeddings.
+
+I finally implemented the model mentioned in [4], without the CRF head. The
+reason was the biased datset: the O label was 20 times more likely than other
+labels, and this made training the model difficult. The standard log-likelihood
+that a CRF computes was not aligned to the metric that was being tested (F1
+scores on the remaining labels). To fix this, a weighted log-likelihood was
+used to train the model, which was hard to integrate with the existing CRF
+library. Some other points of the model which differ from [4] are:
+
+1. Using nn.Embedding instead of torchtext's default GloVe embeddings. This
+   makes training much faster, as nn.Embedding uses a sparse gradient with Adam.
+   GloVe's default embeddings use a simple torch matrix, and this makes obtaining
+   and evalulating the embeddings slower. Also, using a custom embedding class
+   preinitialized from the GloVe embeddings allows us to finetune the embeddings
+   as well, which give better performance.
+
+2. Early stopping on F1 rather than validation loss: this is because the F1 is
+   the final metric that the model will be tested on, and I found that the F1
+   increases when the validation loss increases. The weighted loss is more
+   aligned to the loss metric than the metric itself, but it's not perfect.
+   Hence using F1 metric as the early stopping criteria.
+
+Results:
+The model obtains an F1 macro of 0.65124 and an F1 macro of 0.68938 on the
+validation set. The final train runs combine both the train and validation
+datasets, and are expected to perform better.
+
+References:
+1. Lafferty, John & Mccallum, Andrew & Pereira, Fernando. (2001). Conditional
+Random Fields: Probabilistic Models for Segmenting and Labeling Sequence Data.
+Proceedings of the Eighteenth International Conference on Machine Learning.
+282-289.
+
+2. Huang, Zhiheng, et al. Bidirectional LSTM-CRF Models for Sequence Tagging.
+2015. DOI.org (Datacite), https://doi.org/10.48550/ARXIV.1508.01991.
+
+3. Lample, Guillaume, et al. Neural Architectures for Named Entity Recognition.
+2016. DOI.org (Datacite), https://doi.org/10.48550/ARXIV.1603.01360.
+
+4. Luo, Ling, et al. “An Attention-Based BiLSTM-CRF Approach to Document-Level
+Chemical Named Entity Recognition.” Bioinformatics, edited by Jonathan Wren,
+vol. 34, no. 8, Apr. 2018, pp. 1381–88. DOI.org (Crossref),
+https://doi.org/10.1093/bioinformatics/btx761.
+
+5. Sutton, Charles, and Andrew McCallum. An Introduction to Conditional Random
+Fields. 2010. DOI.org (Datacite), https://doi.org/10.48550/ARXIV.1011.4088.
